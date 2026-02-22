@@ -58,11 +58,23 @@ export function MainSidebar() {
   const pathname = usePathname()
   const { user } = useAuthStore()
 
-  // Compute storage values from real data
+  const formatBytes = (bytes: number, decimals = 2) => {
+    if (!+bytes) return '0 B';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+  };
+
   const quota = user?.quota || 15 * 1024 * 1024 * 1024; // fallback 15GB
   const usedStorage = user?.used_storage || 0;
-  const storagePercent = Math.min(Math.round((usedStorage / quota) * 100), 100);
-  const usedGB = (usedStorage / (1024 * 1024 * 1024)).toFixed(2);
+
+  const rawPercent = quota > 0 ? (usedStorage / quota) * 100 : 0;
+  // If user has files but it's < 1%, show at least 1% for visual feedback
+  const storagePercent = usedStorage > 0 && rawPercent < 1 ? 1 : Math.min(Math.round(rawPercent), 100);
+
+  const usedFormatted = formatBytes(usedStorage);
   const totalGB = (quota / (1024 * 1024 * 1024)).toFixed(0);
 
   const isActive = (url: string) => {
@@ -135,7 +147,7 @@ export function MainSidebar() {
                         <div className="flex flex-col gap-[10px] pl-[16px] pr-4 mt-2 mb-2">
                           <Progress value={storagePercent} className={`h-1 bg-[#e0e0e0] dark:bg-[#444746] ${storagePercent > 90 ? '[&>div]:bg-[#0b5c15] dark:[&>div]:bg-[#f2b8b5]' : '[&>div]:bg-[#1b73e8] dark:[&>div]:bg-[#8ab4f8]'}`} />
                           <p className="text-[14px] text-[#444746] dark:text-[#c4c7c5]">
-                            {usedGB} GB of {totalGB} GB used
+                            {usedFormatted} of {totalGB} GB used
                           </p>
                         </div>
                       )}
